@@ -34,7 +34,14 @@ public struct NWWhatsNewItem: Decodable, Identifiable, Sendable {
 extension NWWhatsNewItem {
     static let previewItems: [NWWhatsNewItem] = [
         NWWhatsNewItem(
-            symbol: .init(name: "icloud", rendering: .hierarchical, colors: [.color(.cyan)], gradient: true, effect: .bounce),
+            symbol: .init(
+                name: "icloud",
+                rendering: .hierarchical,
+                colors: [.color(.cyan)],
+                gradient: true,
+                effect: .bounce,
+                effectOptions: .init(repetition: .periodic(delay: 2), direction: .up)
+            ),
             title: "iCloud Sync",
             description: "Your data, on all your devices."
         ),

@@ -104,9 +104,34 @@ Items without `description` show the symbol and title only. Asset catalog images
 | `gradient` | `true`, `false` | `false` |
 | `variableValue` | `0.0` – `1.0` | none |
 | `variableMode` | `color`, `draw` | `color` |
-| `effect` | `bounce`, `pulse`, `wiggle`, `breathe`, `rotate`, `variableColor`, `drawOn` | none |
+| `effect` | `bounce`, `pulse`, `wiggle`, `breathe`, `rotate`, `variableColor`, `drawOn`, or an object with options (see below) | none |
 
-Effects play once, shortly after the symbol appears. `drawOn` draws the symbol stroke by stroke, a symbol animation introduced with SF Symbols 7 (iOS 26 / macOS 26).
+By default, effects play once, shortly after the symbol appears. Use an object to configure them:
+
+```json
+"effect": {
+  "type": "bounce",
+  "direction": "up",
+  "scope": "byLayer",
+  "speed": 1.5,
+  "repeat": 3
+}
+```
+
+| Key | Values | Applies to | Default |
+|---|---|---|---|
+| `type` | an effect from the table above | all | required |
+| `speed` | multiplier, e.g. `0.5` or `2` | all | `1` |
+| `repeat` | a number, `"continuous"` or `{ "every": 2 }` (seconds between repetitions) | all except `drawOn` | once |
+| `scope` | `byLayer`, `wholeSymbol`; `individually` for `drawOn` only | `bounce`, `pulse`, `wiggle`, `breathe`, `rotate`, `drawOn` | system default |
+| `direction` | `up`, `down` (`bounce`, `wiggle`); `left`, `right`, `forward`, `backward` (`wiggle`); `clockwise`, `counterClockwise` (`wiggle`, `rotate`) | `bounce`, `wiggle`, `rotate` | system default |
+| `style` | `pulse`, `plain` | `breathe` | system default |
+| `fill` | `iterative`, `cumulative` | `variableColor` | system default |
+| `reversing` | `true`, `false` | `variableColor` | system default |
+
+Options that do not apply to the chosen effect are ignored, as are unknown values.
+
+`drawOn` draws the symbol stroke by stroke, a symbol animation introduced with SF Symbols 7 (iOS 26 / macOS 26).
 
 Unknown values fall back to the default. In `palette` mode the colors map to the primary, secondary and tertiary layer. `multicolor` ignores `colors`.
 

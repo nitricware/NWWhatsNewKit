@@ -22,7 +22,7 @@ struct NWWhatsNewSymbolView: View {
 
                 if isDrawn {
                     image
-                        .transition(.symbolEffect(.drawOn))
+                        .transition(.symbolEffect(drawOnEffect, options: symbolEffectOptions))
                 }
             }
             .task {
@@ -33,7 +33,7 @@ struct NWWhatsNewSymbolView: View {
             }
         } else {
             image
-                .modifier(NWWhatsNewSymbolEffectModifier(effect: symbol.effect, trigger: trigger))
+                .modifier(NWWhatsNewSymbolEffectModifier(symbol: symbol, trigger: trigger))
                 .task {
                     guard symbol.effect != nil else { return }
                     try? await Task.sleep(for: .milliseconds(400))
@@ -48,6 +48,19 @@ struct NWWhatsNewSymbolView: View {
             .symbolColorRenderingMode(symbol.gradient ? .gradient : .flat)
             .symbolVariableValueMode(symbol.variableMode == .draw ? .draw : .color)
             .modifier(NWWhatsNewSymbolColorsModifier(symbol: symbol, bundle: bundle))
+    }
+
+    private var drawOnEffect: DrawOnSymbolEffect {
+        switch symbol.effectOptions.scope {
+        case .byLayer: .drawOn.byLayer
+        case .wholeSymbol: .drawOn.wholeSymbol
+        case .individually: .drawOn.individually
+        case nil: .drawOn
+        }
+    }
+
+    private var symbolEffectOptions: SymbolEffectOptions {
+        symbol.effectOptions.symbolEffectOptions
     }
 
     private var renderingMode: SymbolRenderingMode {
@@ -80,18 +93,139 @@ private struct NWWhatsNewSymbolColorsModifier: ViewModifier {
 }
 
 private struct NWWhatsNewSymbolEffectModifier: ViewModifier {
-    let effect: NWWhatsNewSymbol.Effect?
+    let symbol: NWWhatsNewSymbol
     let trigger: Bool
 
+    private var options: NWWhatsNewSymbol.EffectOptions { symbol.effectOptions }
+
     func body(content: Content) -> some View {
-        switch effect {
-        case .bounce: content.symbolEffect(.bounce, value: trigger)
-        case .pulse: content.symbolEffect(.pulse, value: trigger)
-        case .wiggle: content.symbolEffect(.wiggle, value: trigger)
-        case .breathe: content.symbolEffect(.breathe, value: trigger)
-        case .rotate: content.symbolEffect(.rotate, value: trigger)
-        case .variableColor: content.symbolEffect(.variableColor, value: trigger)
+        switch symbol.effect {
+        case .bounce: apply(bounce, to: content)
+        case .pulse: apply(pulse, to: content)
+        case .wiggle: apply(wiggle, to: content)
+        case .breathe: apply(breathe, to: content)
+        case .rotate: apply(rotate, to: content)
+        case .variableColor: apply(variableColor, to: content)
         case .drawOn, nil: content
         }
+    }
+
+    @ViewBuilder
+    private func apply<E: DiscreteSymbolEffect & IndefiniteSymbolEffect & SymbolEffect>(
+        _ effect: E,
+        to content: Content
+    ) -> some View {
+        if options.isIndefinite {
+            content.symbolEffect(effect, options: options.symbolEffectOptions, isActive: trigger)
+        } else {
+            content.symbolEffect(effect, options: options.symbolEffectOptions, value: trigger)
+        }
+    }
+
+    private var bounce: BounceSymbolEffect {
+        var effect = BounceSymbolEffect.bounce
+        switch options.direction {
+        case .up: effect = effect.up
+        case .down: effect = effect.down
+        default: break
+        }
+        switch options.scope {
+        case .byLayer: effect = effect.byLayer
+        case .wholeSymbol: effect = effect.wholeSymbol
+        default: break
+        }
+        return effect
+    }
+
+    private var pulse: PulseSymbolEffect {
+        switch options.scope {
+        case .byLayer: .pulse.byLayer
+        case .wholeSymbol: .pulse.wholeSymbol
+        default: .pulse
+        }
+    }
+
+    private var wiggle: WiggleSymbolEffect {
+        var effect = WiggleSymbolEffect.wiggle
+        switch options.direction {
+        case .up: effect = effect.up
+        case .down: effect = effect.down
+        case .left: effect = effect.left
+        case .right: effect = effect.right
+        case .forward: effect = effect.forward
+        case .backward: effect = effect.backward
+        case .clockwise: effect = effect.clockwise
+        case .counterClockwise: effect = effect.counterClockwise
+        case nil: break
+        }
+        switch options.scope {
+        case .byLayer: effect = effect.byLayer
+        case .wholeSymbol: effect = effect.wholeSymbol
+        default: break
+        }
+        return effect
+    }
+
+    private var breathe: BreatheSymbolEffect {
+        var effect = BreatheSymbolEffect.breathe
+        switch options.breatheStyle {
+        case .pulse: effect = effect.pulse
+        case .plain: effect = effect.plain
+        case nil: break
+        }
+        switch options.scope {
+        case .byLayer: effect = effect.byLayer
+        case .wholeSymbol: effect = effect.wholeSymbol
+        default: break
+        }
+        return effect
+    }
+
+    private var rotate: RotateSymbolEffect {
+        var effect = RotateSymbolEffect.rotate
+        switch options.direction {
+        case .clockwise: effect = effect.clockwise
+        case .counterClockwise: effect = effect.counterClockwise
+        default: break
+        }
+        switch options.scope {
+        case .byLayer: effect = effect.byLayer
+        case .wholeSymbol: effect = effect.wholeSymbol
+        default: break
+        }
+        return effect
+    }
+
+    private var variableColor: VariableColorSymbolEffect {
+        var effect = VariableColorSymbolEffect.variableColor
+        switch options.variableColorFill {
+        case .iterative: effect = effect.iterative
+        case .cumulative: effect = effect.cumulative
+        case nil: break
+        }
+        if let reversing = options.reversing {
+            effect = reversing ? effect.reversing : effect.nonReversing
+        }
+        return effect
+    }
+}
+
+extension NWWhatsNewSymbol.EffectOptions {
+    var symbolEffectOptions: SymbolEffectOptions {
+        var result: SymbolEffectOptions = .default
+        switch repetition {
+        case .once:
+            result = result.nonRepeating
+        case .count(let count):
+            result = result.repeat(.periodic(count))
+        case .continuous:
+            result = result.repeat(.continuous)
+        case .periodic(let delay):
+            result = result.repeat(.periodic(delay: delay))
+        }
+        if speed != 1 {
+            result = result.speed(speed)
+        }
+        return result
     }
 }

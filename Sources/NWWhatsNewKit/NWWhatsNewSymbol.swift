@@ -27,6 +27,7 @@ public struct NWWhatsNewSymbol: Sendable {
     public let variableValue: Double?
     public let variableMode: VariableMode
     public let effect: Effect?
+    public let effectOptions: EffectOptions
 
     public init(
         name: String,
@@ -35,7 +36,8 @@ public struct NWWhatsNewSymbol: Sendable {
         gradient: Bool = false,
         variableValue: Double? = nil,
         variableMode: VariableMode = .color,
-        effect: Effect? = nil
+        effect: Effect? = nil,
+        effectOptions: EffectOptions = EffectOptions()
     ) {
         self.name = name
         self.rendering = rendering
@@ -44,6 +46,7 @@ public struct NWWhatsNewSymbol: Sendable {
         self.variableValue = variableValue
         self.variableMode = variableMode
         self.effect = effect
+        self.effectOptions = effectOptions
     }
 }
 
@@ -59,6 +62,7 @@ extension NWWhatsNewSymbol: Decodable {
         }
 
         let container = try decoder.container(keyedBy: CodingKeys.self)
+        let (effect, effectOptions) = Self.decodeEffect(from: container)
         self.init(
             name: try container.decode(String.self, forKey: .name),
             rendering: try Self.lenient(Rendering.self, container, .rendering) ?? .monochrome,
@@ -66,8 +70,21 @@ extension NWWhatsNewSymbol: Decodable {
             gradient: try container.decodeIfPresent(Bool.self, forKey: .gradient) ?? false,
             variableValue: try container.decodeIfPresent(Double.self, forKey: .variableValue),
             variableMode: try Self.lenient(VariableMode.self, container, .variableMode) ?? .color,
-            effect: try Self.lenient(Effect.self, container, .effect)
+            effect: effect,
+            effectOptions: effectOptions
         )
+    }
+
+    private static func decodeEffect(from container: KeyedDecodingContainer<CodingKeys>) -> (Effect?, EffectOptions) {
+        if let raw = try? container.decode(String.self, forKey: .effect) {
+            return (Effect(rawValue: raw), EffectOptions())
+        }
+        guard let nested = try? container.nestedContainer(keyedBy: EffectOptions.CodingKeys.self, forKey: .effect),
+              let raw = try? nested.decode(String.self, forKey: .type),
+              let effect = Effect(rawValue: raw) else {
+            return (nil, EffectOptions())
+        }
+        return (effect, EffectOptions(from: nested))
     }
 
     private static func lenient<T: RawRepresentable>(

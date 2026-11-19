@@ -1,0 +1,15 @@
+{
+  "originHash" : "d753123918e1943ff360f14af75526b5f238219cef19bdbb3742110e88b4883a",
+  "pins" : [
+    {
+      "identity" : "nwversionkit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/nitricware/NWVersionKit.git",
+      "state" : {
+        "revision" : "3959408c1c684e8bbbaa4e833972b401c8161a88",
+        "version" : "1.0.0"
+      }
+    }
+  ],
+  "version" : 3
+}

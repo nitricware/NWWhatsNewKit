@@ -85,6 +85,99 @@ struct NWWhatsNewDecodingTests {
         #expect(sut.rendering.rawValue == rendering)
     }
 
+    // MARK: - Effect options
+
+    @Test("Effect as string has default options")
+    func effectStringDefaultOptions() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": "bounce" }"#)
+        #expect(sut.effect == .bounce)
+        #expect(sut.effectOptions == .init())
+    }
+
+    @Test("Effect object decodes all options")
+    func effectObjectDecodes() throws {
+        let sut = try symbol("""
+        {
+          "name": "map",
+          "effect": {
+            "type": "variableColor",
+            "speed": 1.5,
+            "repeat": 3,
+            "scope": "byLayer",
+            "direction": "up",
+            "style": "plain",
+            "fill": "cumulative",
+            "reversing": true
+          }
+        }
+        """)
+        #expect(sut.effect == .variableColor)
+        #expect(sut.effectOptions.speed == 1.5)
+        #expect(sut.effectOptions.repetition == .count(3))
+        #expect(sut.effectOptions.scope == .byLayer)
+        #expect(sut.effectOptions.direction == .up)
+        #expect(sut.effectOptions.breatheStyle == .plain)
+        #expect(sut.effectOptions.variableColorFill == .cumulative)
+        #expect(sut.effectOptions.reversing == true)
+    }
+
+    @Test("Effect object with only type has default options")
+    func effectObjectDefaults() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "wiggle" } }"#)
+        #expect(sut.effect == .wiggle)
+        #expect(sut.effectOptions == .init())
+    }
+
+    @Test("Repeat continuous decodes")
+    func repeatContinuous() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "pulse", "repeat": "continuous" } }"#)
+        #expect(sut.effectOptions.repetition == .continuous)
+    }
+
+    @Test("Repeat periodic decodes")
+    func repeatPeriodic() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "bounce", "repeat": { "every": 2 } } }"#)
+        #expect(sut.effectOptions.repetition == .periodic(delay: 2))
+    }
+
+    @Test("Repeat count of one or less means once", arguments: [0, 1, -3])
+    func repeatCountOnce(count: Int) throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "bounce", "repeat": \#(count) } }"#)
+        #expect(sut.effectOptions.repetition == .once)
+    }
+
+    @Test("Invalid speed falls back to 1", arguments: [0.0, -2.0])
+    func invalidSpeed(speed: Double) throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "bounce", "speed": \#(speed) } }"#)
+        #expect(sut.effectOptions.speed == 1)
+    }
+
+    @Test("Unknown effect options are ignored")
+    func unknownEffectOptions() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "rotate", "scope": "nope", "direction": "sideways", "repeat": "forever", "fill": "x" } }"#)
+        #expect(sut.effect == .rotate)
+        #expect(sut.effectOptions == .init())
+    }
+
+    @Test("Unknown effect type means no effect")
+    func unknownEffectType() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "type": "explode", "speed": 2 } }"#)
+        #expect(sut.effect == nil)
+    }
+
+    @Test("Effect object without type means no effect")
+    func effectObjectWithoutType() throws {
+        let sut = try symbol(#"{ "name": "map", "effect": { "speed": 2 } }"#)
+        #expect(sut.effect == nil)
+    }
+
+    @Test("Effect options in code")
+    func effectOptionsInit() {
+        let options = NWWhatsNewSymbol.EffectOptions(speed: -1, repetition: .periodic(delay: -1))
+        #expect(options.speed == 1)
+        #expect(options.repetition == .periodic(delay: 0))
+    }
+
     @Test("Unknown enum values fall back to defaults")
     func unknownValuesFallBack() throws {
         let sut = try symbol(#"{ "name": "map", "rendering": "neon", "variableMode": "fill", "effect": "explode" }"#)
