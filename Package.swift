@@ -1,32 +1,22 @@
-// swift-tools-version: 6.4
-// The swift-tools-version declares the minimum version of Swift required to build this package.
+// swift-tools-version: 6.2
 
 import PackageDescription
 
 let package = Package(
-    name: "NWWhatsNew",
-    products: [
-        // Products define the executables and libraries a package produces, making them visible to other packages.
-        .library(
-            name: "NWWhatsNew",
-            targets: ["NWWhatsNew"]
-        ),
+    name: "NWWhatsNewKit",
+    platforms: [.iOS(.v26), .macOS(.v26)],
+    products: [.library(name: "NWWhatsNewKit", targets: ["NWWhatsNewKit"])],
+    dependencies: [
+        .package(url: "https://github.com/nitricware/NWVersionKit.git", from: "1.0.0"),
     ],
     targets: [
-        // Targets are the basic building blocks of a package, defining a module or a test suite.
-        // Targets can depend on other targets in this package and products from dependencies.
         .target(
-            name: "NWWhatsNew",
-            swiftSettings: [
-                .enableUpcomingFeature("ApproachableConcurrency"),
-            ],
+            name: "NWWhatsNewKit",
+            dependencies: [.product(name: "NWVersionKit", package: "NWVersionKit")]
         ),
         .testTarget(
-            name: "NWWhatsNewTests",
-            dependencies: ["NWWhatsNew"],
-            swiftSettings: [
-                .enableUpcomingFeature("ApproachableConcurrency"),
-            ],
+            name: "NWWhatsNewKitTests",
+            dependencies: ["NWWhatsNewKit"]
         ),
     ]
 )
